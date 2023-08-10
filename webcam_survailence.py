@@ -131,6 +131,7 @@ def security_pi():
 		key = cv2.waitKey(1) & 0xFF
 		if key == ord("q"):
 			break
+		rawCapture.truncate(0)
 
 
 
