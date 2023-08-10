@@ -5,8 +5,7 @@ import cv2
 from datetime import datetime
 from azure.storage.blob import BlobServiceClient, BlobClient, ContainerClient, BlobType
 
-driver= '{ODBC Driver 17 for SQL Server}'
-
+driver= None
 database_connection = None
 blob_container = None
 configuration = None
@@ -21,6 +20,7 @@ def connection_setup(config):
     database = config["database_name"]
     username = config["username"]
     password = config["password"]
+    driver = config["database_driver"]
 
 
     database_connection = pyodbc.connect('DRIVER='+driver+';SERVER=tcp:'+server+';PORT=1433;DATABASE='+database+';UID='+username+';PWD='+ password)
