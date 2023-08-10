@@ -41,8 +41,9 @@ def processing_captures(frame, gray, average, last_uploaded, motion_counter, con
 		text = "Occupied"
 
 	ts = timestamp.strftime("%A %d %B %Y %I:%M:%S%p")
-	cv2.putText(frame, f"Room Status: {text}", (10, 20), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 2)
-	cv2.putText(frame, ts, (10, frame.shape[0] - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.35, (0, 0, 255), 1)
+	cv2.putText(frame, f"Room Status: {text}", (10, 20), cv2.QT_FONT_NORMAL, 0.5, (0, 0, 255), 2)
+	cv2.putText(frame, ts, (10, frame.shape[0] - 10), cv2.QT_FONT_NORMAL, 0.4, (0, 0, 255), 1)
+	cv2.putText(thresh, f"Time: {config['min_upload_seconds'] - (timestamp - last_uploaded).seconds} Frames: {motion_counter}/{config['min_motion_frames']}", (10, 20), cv2.QT_FONT_NORMAL, 0.5, (255, 255, 255), 2)
 	
 	if text == "Occupied":
 		if (timestamp - last_uploaded).seconds >= config["min_upload_seconds"]:
@@ -61,7 +62,7 @@ def processing_captures(frame, gray, average, last_uploaded, motion_counter, con
 		cv2.imshow("Security Feed", frame)
 		cv2.imshow("Thresh", thresh)
 		cv2.imshow("Frame Delta", frameDelta)
-		cv2.imshow("Average", cv2.convertScaleAbs(average))
+		# cv2.imshow("Average", cv2.convertScaleAbs(average))
 
 	return (average, last_uploaded, motion_counter)
 
