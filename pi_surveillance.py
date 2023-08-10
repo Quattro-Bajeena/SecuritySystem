@@ -1,5 +1,5 @@
 # import the necessary packages
-from pyimagesearch.tempimage import TempImage
+from infrastructure.tempimage import TempImage
 from picamera.array import PiRGBArray
 from picamera import PiCamera
 import argparse
@@ -45,10 +45,10 @@ motionCounter = 0
 
 
 # capture frames from the camera
-for f in camera.capture_continuous(rawCapture, format="bgr", use_video_port=True):
+for raw_frame in camera.capture_continuous(rawCapture, format="bgr", use_video_port=True):
 	# grab the raw NumPy array representing the image and initialize
 	# the timestamp and occupied/unoccupied text
-	frame = f.array
+	frame = raw_frame.array
 	timestamp = datetime.datetime.now()
 	text = "Unoccupied"
 	# resize the frame, convert it to grayscale, and blur it
