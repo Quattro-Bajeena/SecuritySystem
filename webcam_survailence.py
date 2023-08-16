@@ -49,7 +49,7 @@ def processing_captures(frame, gray, config, average, last_uploaded, motion_coun
 	if text == "Occupied":
 		if (timestamp - last_uploaded).seconds >= config["min_upload_seconds"]:
 			motion_counter += 1
-			if config["platform"]:
+			if config["platform"] == "pi":
 				print("-", end=" ", flush=True)
 			if motion_counter >= config["min_motion_frames"]:
 				if config["upload_data"]:
@@ -65,7 +65,7 @@ def processing_captures(frame, gray, config, average, last_uploaded, motion_coun
 		
 	else:
 		motion_counter = 0
-		if config["platform"]:
+		if config["platform"] == "pi":
 				print(".", end=" ", flush=True)
 		if config["upload_data"] and event_id and (timestamp - last_uploaded).seconds >= config["event_reset_time"]:
 			print("[EVENT STOP] Id: ", event_id)
