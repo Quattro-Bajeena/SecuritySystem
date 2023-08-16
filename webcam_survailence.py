@@ -13,6 +13,7 @@ import cv2
 config = None
 def setup():
 	global config
+	print("Setup start")
 	configuration_path = "conf.json"
 	config = json.load(open(configuration_path))
 	print("Loaded config", config)
@@ -128,7 +129,6 @@ def security_pi():
 	event_id = False
 
 	for raw_frame in camera.capture_continuous(rawCapture, format="bgr", use_video_port=True):
-		print(".", end=" ")
 		frame = raw_frame.array
 
 		frame = imutils.resize(frame, width=500)
@@ -140,7 +140,8 @@ def security_pi():
 			average = gray.copy().astype("float")
 			rawCapture.truncate(0)
 			continue
-
+		
+		print(".", end=" ", flush=True)
 		average, last_uploaded, motion_counter, event_id = processing_captures(frame, gray, config, average, last_uploaded, motion_counter, event_id)
 
 		key = cv2.waitKey(1) & 0xFF
