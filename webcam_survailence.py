@@ -1,4 +1,4 @@
-from infrastructure import save_recording
+from infrastructure import data_link
 from infrastructure.tempimage import TempImage
 
 from imutils.video import VideoStream
@@ -17,11 +17,11 @@ def setup():
 	config = json.load(open(configuration_path))
 	print("Loaded config", config)
 
-	if config["use_azure"]:
-		save_recording.connection_setup(config)
+	if config["upload_data"]:
+		data_link.connection_setup(config)
 		
 
-def processing_captures(frame, gray, average, last_uploaded, motion_counter, config):
+def processing_captures(frame, gray, config, average, last_uploaded, motion_counter, event_id ):
 	text = "Unoccupied"
 	timestamp = datetime.datetime.now()
 
@@ -50,21 +50,31 @@ def processing_captures(frame, gray, average, last_uploaded, motion_counter, con
 			motion_counter += 1
 			if motion_counter >= config["min_motion_frames"]:
 
-				if config["use_azure"]:
-					save_recording.upload_image(frame)
+				if not event_id:
+					event_id = data_link.create_event()
+					print("[EVENT START] Id: ", event_id)
+
+				if config["upload_data"]:
+					data_link.upload_image(frame, event_id)
 
 				print("[CAPTURE]")
 				last_uploaded = timestamp
 				motion_counter = 0
+		
 	else:
 		motion_counter = 0
+		if event_id and (timestamp - last_uploaded).seconds >= config["event_reset_time"]:
+			print("[EVENT STOP] Id: ", event_id)
+			data_link.set_event_stop(event_id, last_uploaded)
+			event_id = None
+
 	if config["show_video"]:
 		cv2.imshow("Security Feed", frame)
 		cv2.imshow("Thresh", thresh)
 		cv2.imshow("Frame Delta", frameDelta)
 		# cv2.imshow("Average", cv2.convertScaleAbs(average))
 
-	return (average, last_uploaded, motion_counter)
+	return (average, last_uploaded, motion_counter, event_id)
 
 
 def security_desktop():
@@ -74,6 +84,7 @@ def security_desktop():
 	average = None
 	last_uploaded = datetime.datetime.now()
 	motion_counter = 0
+	event_id = None
 
 	while True:
 		frame = video_stream.read()
@@ -88,7 +99,7 @@ def security_desktop():
 			average = gray.copy().astype("float")
 			continue
 
-		average, last_uploaded, motion_counter = processing_captures(frame, gray, average, last_uploaded, motion_counter, config)
+		average, last_uploaded, motion_counter, event_id =  processing_captures(frame, gray, config, average, last_uploaded, motion_counter, event_id)
 
 		key = cv2.waitKey(1) & 0xFF
 		if key == ord("q"):
@@ -113,6 +124,7 @@ def security_pi():
 
 	last_uploaded = datetime.datetime.now()
 	motion_counter = 0
+	event_id = False
 
 	for raw_frame in camera.capture_continuous(rawCapture, format="bgr", use_video_port=True):
 		frame = raw_frame.array
@@ -127,7 +139,7 @@ def security_pi():
 			rawCapture.truncate(0)
 			continue
 
-		average, last_uploaded, motion_counter = processing_captures(frame, gray, average, last_uploaded, motion_counter, config)
+		average, last_uploaded, motion_counter, event_id = processing_captures(frame, gray, config, average, last_uploaded, motion_counter, event_id)
 
 		key = cv2.waitKey(1) & 0xFF
 		if key == ord("q"):

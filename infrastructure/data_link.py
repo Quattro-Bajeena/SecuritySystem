@@ -1,5 +1,6 @@
 from infrastructure.tempimage import TempImage
 import pyodbc
+from mysql import connector
 import os, uuid
 import cv2
 from datetime import datetime
@@ -16,14 +17,9 @@ def connection_setup(config):
 
     print("Connection setup")
     global database_connection, blob_container
-    server = config["database_server"]
-    database = config["database_name"]
-    username = config["username"]
-    password = config["password"]
-    driver = config["database_driver"]
 
+    database_connection = connector.connect(user=config["username"], password=config["password"], host=config["database_server"], port=3306, database=config["database_name"], ssl_ca="DigiCertGlobalRootCA.crt.pem", ssl_disabled=False)
 
-    database_connection = pyodbc.connect('DRIVER='+driver+';SERVER=tcp:'+server+';PORT=1433;DATABASE='+database+';UID='+username+';PWD='+ password)
     print("Conenected to database")
 
     blob_connection_string = config["blob_connection_string"]
@@ -35,7 +31,7 @@ def connection_setup(config):
 
 
 
-def upload_image(frame):
+def upload_image(frame, event_id):
     now = datetime.now()
     date_time = now.strftime("%Y-%m-%d_%H-%M-%S_")
 
@@ -48,17 +44,38 @@ def upload_image(frame):
 
 
     with database_connection.cursor() as cursor:
-        sql = f"INSERT INTO MovementCapture (Date, Type, FileName) VALUES ('{now}', 0, '{img_path}')"
+        sql = f"INSERT INTO movementcapture (Date, Type, FileName, EventId) VALUES ('{now}', 0, '{img_path}', {event_id})"
+        print(sql)
         cursor.execute(sql)
+        database_connection.commit()
 
     print("[UPLOAD]")
 
     os.remove(img_path)
 
 
+def create_event() -> int:
+    with database_connection.cursor() as cursor:
+        now = datetime.now()
+        sql = f"INSERT INTO detectionevent (Start, InProgress) VALUES ('{now}', 1)"
+        print(sql)
+        cursor.execute(sql)
+        database_connection.commit()
+        return cursor.lastrowid
 
-def save_captured_image(captured_image_data):
-    pass
+
+
+def set_event_stop(event_id, time_stop):
+    with database_connection.cursor() as cursor:
+        sql = f"UPDATE detectionevent SET End='{time_stop}', InProgress=0 WHERE Id={event_id}"
+        print(sql)
+        cursor.execute(sql)
+        database_connection.commit()
+
+
+
+
+
 
 if __name__ == '__main__':
     server = 'security-system-server.database.windows.net'
