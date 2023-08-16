@@ -128,6 +128,7 @@ def security_pi():
 	event_id = False
 
 	for raw_frame in camera.capture_continuous(rawCapture, format="bgr", use_video_port=True):
+		print(".", end=" ")
 		frame = raw_frame.array
 
 		frame = imutils.resize(frame, width=500)
