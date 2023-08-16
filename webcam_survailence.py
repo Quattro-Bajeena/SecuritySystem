@@ -64,7 +64,7 @@ def processing_captures(frame, gray, config, average, last_uploaded, motion_coun
 		
 	else:
 		motion_counter = 0
-		if config["upload_data"] and event_id and (timestamp - last_uploaded).seconds >= config["event_reset_time"] \:
+		if config["upload_data"] and event_id and (timestamp - last_uploaded).seconds >= config["event_reset_time"]:
 			print("[EVENT STOP] Id: ", event_id)
 			data_link.set_event_stop(event_id, last_uploaded)
 			event_id = None
