@@ -50,11 +50,12 @@ def processing_captures(frame, gray, config, average, last_uploaded, motion_coun
 			motion_counter += 1
 			if motion_counter >= config["min_motion_frames"]:
 
-				if not event_id:
-					event_id = data_link.create_event()
-					print("[EVENT START] Id: ", event_id)
 
 				if config["upload_data"]:
+					if not event_id:
+						event_id = data_link.create_event()
+						print("[EVENT START] Id: ", event_id)
+
 					data_link.upload_image(frame, event_id)
 
 				print("[CAPTURE]")
@@ -63,7 +64,7 @@ def processing_captures(frame, gray, config, average, last_uploaded, motion_coun
 		
 	else:
 		motion_counter = 0
-		if event_id and (timestamp - last_uploaded).seconds >= config["event_reset_time"]:
+		if config["upload_data"] and event_id and (timestamp - last_uploaded).seconds >= config["event_reset_time"] \:
 			print("[EVENT STOP] Id: ", event_id)
 			data_link.set_event_stop(event_id, last_uploaded)
 			event_id = None
