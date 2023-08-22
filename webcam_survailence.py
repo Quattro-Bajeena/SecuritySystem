@@ -10,6 +10,7 @@ import json
 import time
 import cv2
 
+
 config = None
 def setup():
 	global config
@@ -23,7 +24,7 @@ def setup():
 		
 
 def processing_captures(frame, gray, config, average, last_uploaded, motion_counter, event_id):
-	text = "Unoccupied"
+	occupied = False
 	timestamp = datetime.datetime.now()
 
 	cv2.accumulateWeighted(gray, average, config["average_strength"])
@@ -38,26 +39,31 @@ def processing_captures(frame, gray, config, average, last_uploaded, motion_coun
 		if cv2.contourArea(c) < config["min_area"]:
 			continue
 		(x, y, w, h) = cv2.boundingRect(c)
-		cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
-		text = "Occupied"
+		
+		if config["debug"]:
+			cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
+		occupied = True
 
 	ts = timestamp.strftime("%A %d %B %Y %I:%M:%S%p")
-	cv2.putText(frame, f"Room Status: {text}", (10, 20), cv2.QT_FONT_NORMAL, 0.5, (0, 0, 255), 2)
-	cv2.putText(frame, ts, (10, frame.shape[0] - 10), cv2.QT_FONT_NORMAL, 0.4, (0, 0, 255), 1)
-	cv2.putText(thresh, f"Time: {config['min_upload_seconds'] - (timestamp - last_uploaded).seconds} Frames: {motion_counter}/{config['min_motion_frames']}", (10, 20), cv2.QT_FONT_NORMAL, 0.5, (255, 255, 255), 2)
+	if config["debug"]:
+		cv2.putText(frame, f"Room Status: {occupied}", (10, 20), cv2.QT_FONT_NORMAL, 0.5, (0, 0, 255), 2)
+		cv2.putText(frame, ts, (10, frame.shape[0] - 10), cv2.QT_FONT_NORMAL, 0.4, (0, 0, 255), 1)
+		cv2.putText(thresh, f"Time: {config['min_upload_seconds'] - (timestamp - last_uploaded).seconds} Frames: {motion_counter}/{config['min_motion_frames']}", (10, 20), cv2.QT_FONT_NORMAL, 0.5, (255, 255, 255), 2)
 	
-	if text == "Occupied":
+	if occupied:
 		if (timestamp - last_uploaded).seconds >= config["min_upload_seconds"]:
 			motion_counter += 1
 			if config["platform"] == "pi":
 				print("-", end=" ", flush=True)
 			if motion_counter >= config["min_motion_frames"]:
 				if config["upload_data"]:
+					first_event_upload = False
 					if not event_id:
 						event_id = data_link.create_event()
+						first_event_upload = True
 						print("[EVENT START] Id: ", event_id)
 
-					data_link.upload_image(frame, event_id)
+					data_link.upload_image(frame, event_id, first_event_upload)
 
 				print("[CAPTURE]")
 				last_uploaded = timestamp

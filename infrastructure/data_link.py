@@ -4,19 +4,22 @@ from mysql import connector
 import os, uuid
 import cv2
 from datetime import datetime
-from azure.storage.blob import BlobServiceClient, BlobClient, ContainerClient, BlobType
+from azure.storage.blob import BlobServiceClient, BlobClient, ContainerClient, BlobType, ContentSettings
+import requests
+
 
 driver= None
 database_connection = None
-blob_container = None
+blob_service = None
 configuration = None
+blob_container_name = None
 
 def connection_setup(config):
     global configuration
     configuration = config
 
     print("Connection setup")
-    global database_connection, blob_container
+    global database_connection, blob_service, blob_container_name
 
     database_connection = connector.connect(user=config["username"], password=config["password"], host=config["database_server"], port=3306, database=config["database_name"], ssl_ca="DigiCertGlobalRootCA.crt.pem", ssl_disabled=False)
 
@@ -26,12 +29,12 @@ def connection_setup(config):
     blob_container_name = config["blob_container_name"]
     
     blob_service = BlobServiceClient.from_connection_string(blob_connection_string)
-    blob_container = blob_service.get_container_client(container= blob_container_name) 
+
     print("Conenected to blob storage")
 
 
 
-def upload_image(frame, event_id):
+def upload_image(frame, event_id, first_event_upload):
     now = datetime.now()
     date_time = now.strftime("%Y-%m-%d_%H-%M-%S_")
 
@@ -40,7 +43,9 @@ def upload_image(frame, event_id):
     cv2.imwrite(img_path, frame)
 
     with open(file=img_path, mode="rb") as data:
-        blob_container.upload_blob(img_path, data)
+        cnt_settings = ContentSettings(content_type="image/jpg")
+        blob_client = blob_service.get_blob_client(container=blob_container_name, blob=img_path)
+        blob_client.upload_blob(data,  content_settings=cnt_settings)
 
 
     with database_connection.cursor() as cursor:
@@ -50,6 +55,10 @@ def upload_image(frame, event_id):
         database_connection.commit()
 
     print("[UPLOAD]")
+
+    if first_event_upload and configuration["push_notifications"]:
+        push_notification(date_time, img_path)
+        print("[PUSH NOTIFICATION]")
 
     os.remove(img_path)
 
@@ -73,8 +82,15 @@ def set_event_stop(event_id, time_stop):
         database_connection.commit()
 
 
-
-
+def push_notification(date_time, image):
+    r = requests.post(configuration["pushover_endpoint"], data={
+        "token" : configuration["pushover_api_token"],
+        "user" : configuration["pushover_user_key"],
+        "message" : f"At {date_time} a movement start being detected"
+    },
+    files= {
+        "attachment" : (image, open(image, 'rb'), "image/jpeg")
+    })
 
 
 if __name__ == '__main__':
