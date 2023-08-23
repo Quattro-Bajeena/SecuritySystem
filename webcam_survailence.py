@@ -1,9 +1,6 @@
 from infrastructure import data_link
-from infrastructure.tempimage import TempImage
 
 from imutils.video import VideoStream
-import argparse
-import warnings
 import datetime
 import imutils
 import json
@@ -41,13 +38,13 @@ def processing_captures(frame, gray, config, average, last_uploaded, motion_coun
 		(x, y, w, h) = cv2.boundingRect(c)
 		
 		if config["debug"]:
-			cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
+			cv2.rectangle(frame, (x, y), (x + w, y + h), (255, 255, 255), 2)
 		occupied = True
 
 	ts = timestamp.strftime("%A %d %B %Y %I:%M:%S%p")
 	if config["debug"]:
-		cv2.putText(frame, f"Room Status: {occupied}", (10, 20), cv2.QT_FONT_NORMAL, 0.5, (0, 0, 255), 2)
-		cv2.putText(frame, ts, (10, frame.shape[0] - 10), cv2.QT_FONT_NORMAL, 0.4, (0, 0, 255), 1)
+		cv2.putText(frame, f"Motion detected: {occupied}", (10, 20), cv2.QT_FONT_NORMAL, 0.5, (255, 255, 255), 2)
+		cv2.putText(frame, ts, (10, frame.shape[0] - 10), cv2.QT_FONT_NORMAL, 0.4, (255, 255, 255), 1)
 		cv2.putText(thresh, f"Time: {config['min_upload_seconds'] - (timestamp - last_uploaded).seconds} Frames: {motion_counter}/{config['min_motion_frames']}", (10, 20), cv2.QT_FONT_NORMAL, 0.5, (255, 255, 255), 2)
 	
 	if occupied:
@@ -89,7 +86,7 @@ def processing_captures(frame, gray, config, average, last_uploaded, motion_coun
 
 def security_desktop():
 	video_stream = VideoStream(src=0).start()
-	print("Warmup")
+	print("[WARMUP]")
 	time.sleep(config["camera_warmup_time"])
 	average = None
 	last_uploaded = datetime.datetime.now()
@@ -129,7 +126,7 @@ def security_pi():
 	rawCapture = PiRGBArray(camera, size=tuple(config["resolution"]))
 	average = None
 
-	print("[INFO] warming up...")
+	print("[WARMUP]")
 	time.sleep(config["camera_warmup_time"])
 
 	last_uploaded = datetime.datetime.now()
@@ -144,7 +141,6 @@ def security_pi():
 		gray = cv2.GaussianBlur(gray, (21, 21), 0)
 
 		if average is None:
-			print("[INFO] starting background model...")
 			average = gray.copy().astype("float")
 			rawCapture.truncate(0)
 			continue
