@@ -1,0 +1,10 @@
+- specyfikacja
+- urządzenia
+- schemat blokowe
+- opis krótki
+- schemat bazy danych
+- pseudokod algorytmu danych 
+- screenshoty
+- 2,3 zdania komentarza o algorytmie rozpoznawania danych
+- maks 4 strony A4.
+- do końca tygodnia

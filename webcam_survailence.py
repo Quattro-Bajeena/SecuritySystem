@@ -44,7 +44,7 @@ def processing_captures(frame, gray, config, average, last_uploaded, motion_coun
 	ts = timestamp.strftime("%A %d %B %Y %I:%M:%S%p")
 	if config["debug"]:
 		cv2.putText(frame, f"Motion detected: {occupied}", (10, 20), cv2.QT_FONT_NORMAL, 0.5, (255, 255, 255), 2)
-		cv2.putText(frame, ts, (10, frame.shape[0] - 10), cv2.QT_FONT_NORMAL, 0.4, (255, 255, 255), 1)
+		# cv2.putText(frame, ts, (10, frame.shape[0] - 10), cv2.QT_FONT_NORMAL, 0.4, (255, 255, 255), 1)
 		cv2.putText(thresh, f"Time: {config['min_upload_seconds'] - (timestamp - last_uploaded).seconds} Frames: {motion_counter}/{config['min_motion_frames']}", (10, 20), cv2.QT_FONT_NORMAL, 0.5, (255, 255, 255), 2)
 	
 	if occupied:
@@ -79,7 +79,7 @@ def processing_captures(frame, gray, config, average, last_uploaded, motion_coun
 		cv2.imshow("Security Feed", frame)
 		cv2.imshow("Thresh", thresh)
 		cv2.imshow("Frame Delta", frameDelta)
-		# cv2.imshow("Average", cv2.convertScaleAbs(average))
+		cv2.imshow("Average", cv2.convertScaleAbs(average))
 
 	return (average, last_uploaded, motion_counter, event_id)
 
