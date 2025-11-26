@@ -14,9 +14,11 @@ blob_service = None
 configuration = None
 blob_container_name = None
 
-def connection_setup(config):
+def configuration_setup(config):
     global configuration
     configuration = config
+
+def connection_setup(config):
 
     print("Connection setup")
     global database_connection, blob_service, blob_container_name
@@ -81,6 +83,20 @@ def set_event_stop(event_id, time_stop):
         cursor.execute(sql)
         database_connection.commit()
 
+def discord_notification(frame):
+    date_time = datetime.now().strftime("%Y-%m-%d_%H-%M-%S_")
+    img_path = "images/" + date_time + str(uuid.uuid4()) + ".jpg"
+    cv2.imwrite(img_path, frame)
+
+    r = requests.post(configuration["discord_webhook_url"], 
+        data={
+            "content": f"At {date_time} a movemenet was detected"
+        },
+        files={
+            "file": open(img_path, 'rb')
+        })
+
+    print(f"[DISCORD MESSAGE: {r.status_code}]" )
 
 def push_notification(date_time, image):
     r = requests.post(configuration["pushover_endpoint"], data={

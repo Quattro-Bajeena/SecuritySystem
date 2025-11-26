@@ -16,6 +16,7 @@ def setup():
 	config = json.load(open(configuration_path))
 	print("Loaded config", config)
 
+	data_link.configuration_setup(config)
 	if config["upload_data"]:
 		data_link.connection_setup(config)
 		
@@ -61,6 +62,8 @@ def processing_captures(frame, gray, config, average, last_uploaded, motion_coun
 						print("[EVENT START] Id: ", event_id)
 
 					data_link.upload_image(frame, event_id, first_event_upload)
+				if config["send_discord_message"]:
+					data_link.discord_notification(frame)
 
 				print("[CAPTURE]")
 				last_uploaded = timestamp
