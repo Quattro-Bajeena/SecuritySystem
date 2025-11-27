@@ -6,20 +6,8 @@ import imutils
 import json
 import time
 import cv2
+import numpy as np
 
-
-config = None
-def setup():
-	global config
-	print("Setup start")
-	configuration_path = "conf.json"
-	config = json.load(open(configuration_path))
-	print("Loaded config", config)
-
-	data_link.configuration_setup(config)
-	if config["upload_data"]:
-		data_link.connection_setup(config)
-		
 
 def processing_captures(frame, gray, config, average, last_uploaded, motion_counter, event_id):
 	occupied = False
@@ -32,6 +20,11 @@ def processing_captures(frame, gray, config, average, last_uploaded, motion_coun
 	thresh = cv2.dilate(thresh, None, iterations=config["dilate_iterations"])
 	cnts = cv2.findContours(thresh.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 	cnts = imutils.grab_contours(cnts)
+
+	if config["detect_people"]:
+		detect_people(frame)
+			
+
 
 	for c in cnts:
 		if cv2.contourArea(c) < config["min_area"]:
@@ -86,6 +79,21 @@ def processing_captures(frame, gray, config, average, last_uploaded, motion_coun
 
 	return (average, last_uploaded, motion_counter, event_id)
 
+
+def detect_people(frame):
+	# resized = cv2.resize(frame, (640, 480))
+	# using a greyscale picture, also for faster detection
+	# gray = cv2.cvtColor(resized, cv2.COLOR_RGB2GRAY)
+	# hogFrame = frame.copy()
+	boxes, weights = hog.detectMultiScale(frame, winStride=(8,8), padding=(8,8), scale=1.05 )
+
+	boxes = np.array([[x, y, x + w, y + h] for (x, y, w, h) in boxes])
+	for (xA, yA, xB, yB) in boxes:
+		if config["debug"]:
+			cv2.rectangle(frame, (xA, yA), (xB, yB), (0, 0, 255), 2)
+
+	people_detected = len(boxes) > 0
+	cv2.putText(frame, f"People detected: {people_detected}", (10, 40), cv2.QT_FONT_NORMAL, 0.5, (255, 255, 255), 2)
 
 def security_desktop():
 	video_stream = VideoStream(src=0).start()
@@ -158,9 +166,19 @@ def security_pi():
 
 
 
-if __name__ == "__main__":
-	setup()
-	if config["platform"] == 'desktop':
-		security_desktop()
-	elif config["platform"] == 'pi':
-		security_pi()
+print("Setup start")
+configuration_path = "conf.json"
+config = json.load(open(configuration_path))
+print("Loaded config", config)
+
+hog = cv2.HOGDescriptor()
+hog.setSVMDetector(cv2.HOGDescriptor_getDefaultPeopleDetector())
+
+data_link.configuration_setup(config)
+if config["upload_data"]:
+	data_link.connection_setup(config)
+
+if config["platform"] == 'desktop':
+	security_desktop()
+elif config["platform"] == 'pi':
+	security_pi()

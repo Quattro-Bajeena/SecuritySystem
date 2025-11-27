@@ -1,4 +1,3 @@
-from infrastructure.tempimage import TempImage
 import pyodbc
 from mysql import connector
 import os, uuid
