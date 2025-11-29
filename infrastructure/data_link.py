@@ -82,14 +82,14 @@ def set_event_stop(event_id, time_stop):
         cursor.execute(sql)
         database_connection.commit()
 
-def discord_notification(frame):
+def discord_notification(frame, people_detected: bool):
     date_time = datetime.now().strftime("%Y-%m-%d_%H-%M-%S_")
-    img_path = "images/" + date_time + str(uuid.uuid4()) + ".jpg"
+    img_path =  configuration["capture_folder"] + "/" + date_time + str(uuid.uuid4()) + ".jpg"
     cv2.imwrite(img_path, frame)
 
     r = requests.post(configuration["discord_webhook_url"], 
         data={
-            "content": f"At {date_time} a movemenet was detected"
+            "content": f"{date_time}: movemenet detected. {'People detected' if people_detected else ''}"
         },
         files={
             "file": open(img_path, 'rb')

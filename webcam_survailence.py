@@ -11,6 +11,7 @@ import numpy as np
 
 def processing_captures(frame, gray, config, average, last_uploaded, motion_counter, event_id):
 	occupied = False
+	people_detected = None
 	timestamp = datetime.datetime.now()
 
 	cv2.accumulateWeighted(gray, average, config["average_strength"])
@@ -22,7 +23,7 @@ def processing_captures(frame, gray, config, average, last_uploaded, motion_coun
 	cnts = imutils.grab_contours(cnts)
 
 	if config["detect_people"]:
-		detect_people(frame)
+		people_detected = detect_people(frame)
 			
 
 
@@ -56,7 +57,7 @@ def processing_captures(frame, gray, config, average, last_uploaded, motion_coun
 
 					data_link.upload_image(frame, event_id, first_event_upload)
 				if config["send_discord_message"]:
-					data_link.discord_notification(frame)
+					data_link.discord_notification(frame, people_detected)
 
 				print("[CAPTURE]")
 				last_uploaded = timestamp
@@ -94,6 +95,7 @@ def detect_people(frame):
 
 	people_detected = len(boxes) > 0
 	cv2.putText(frame, f"People detected: {people_detected}", (10, 40), cv2.QT_FONT_NORMAL, 0.5, (255, 255, 255), 2)
+	return people_detected
 
 def security_desktop():
 	video_stream = VideoStream(src=0).start()
@@ -154,15 +156,48 @@ def security_pi():
 		if average is None:
 			average = gray.copy().astype("float")
 			rawCapture.truncate(0)
-			continue
-		
-		
+			continue			
 		average, last_uploaded, motion_counter, event_id = processing_captures(frame, gray, config, average, last_uploaded, motion_counter, event_id)
 
 		key = cv2.waitKey(1) & 0xFF
 		if key == ord("q"):
 			break
 		rawCapture.truncate(0)
+
+
+def security_pi_2():
+	from picamera2 import Picamera2
+
+	picam2 = Picamera2()
+	picam2.configure(picam2.create_video_configuration(main={"size": tuple(config["resolution"])}))
+	picam2.start()
+	time.sleep(config["camera_warmup_time"])
+	print("[WARMUP DONE]")
+
+	average = None
+	last_uploaded = datetime.datetime.now()
+	motion_counter = 0
+	event_id = None
+
+	while True:
+		frame = picam2.capture_array()  # returns an RGB numpy array
+		frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
+		frame = imutils.resize(frame, width=500)
+		gray = cv2.GaussianBlur(cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY), (21, 21), 0)
+
+		if average is None:
+			average = gray.copy().astype("float")
+			continue
+
+		average, last_uploaded, motion_counter, event_id = processing_captures(
+			frame, gray, config, average, last_uploaded, motion_counter, event_id
+		)
+
+		if cv2.waitKey(1) & 0xFF == ord("q"):
+			break
+
+	picam2.stop()
+	cv2.destroyAllWindows()
 
 
 
@@ -181,4 +216,4 @@ if config["upload_data"]:
 if config["platform"] == 'desktop':
 	security_desktop()
 elif config["platform"] == 'pi':
-	security_pi()
+	security_pi_2()
