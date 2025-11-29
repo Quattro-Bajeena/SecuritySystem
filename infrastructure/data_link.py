@@ -83,7 +83,7 @@ def set_event_stop(event_id, time_stop):
         database_connection.commit()
 
 def discord_notification(frame, people_detected: bool):
-    date_time = datetime.now().strftime("%Y-%m-%d_%H-%M-%S_")
+    date_time = datetime.now().strftime("%Y.%m.%d %H:%M:%S ")
     img_path =  configuration["capture_folder"] + "/" + date_time + str(uuid.uuid4()) + ".jpg"
     cv2.imwrite(img_path, frame)
 
@@ -95,7 +95,7 @@ def discord_notification(frame, people_detected: bool):
             "file": open(img_path, 'rb')
         })
 
-    print(f"[DISCORD MESSAGE: {r.status_code}]" )
+    print(f"[DISCORD MESSAGE]" )
 
 def push_notification(date_time, image):
     r = requests.post(configuration["pushover_endpoint"], data={
